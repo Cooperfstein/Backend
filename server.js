@@ -10,7 +10,11 @@ const PORT = process.env.PORT || 3000;
 const ADZUNA_APP_ID = process.env.ADZUNA_APP_ID;
 const ADZUNA_APP_KEY = process.env.ADZUNA_APP_KEY;
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
-
+console.log({
+  adzunaID: !!ADZUNA_APP_ID,
+  adzunaKey: !!ADZUNA_APP_KEY,
+  anthropic: !!ANTHROPIC_API_KEY
+});
 // Maps our chip tags to search keywords Adzuna's job index understands.
 // This is a starting point — tweak freely as you see what pulls in good results.
 const KEYWORD_MAP = {
@@ -40,7 +44,7 @@ app.post('/api/match', async (req, res) => {
     const keywords = allTags
       .map(t => (t.startsWith('custom:') ? t.replace('custom:', '') : KEYWORD_MAP[t] || t))
       .filter(Boolean);
-    const searchTerm = [...new Set(keywords)].slice(0, 5).join(' ') || 'part time';
+    const searchTerm = [...new Set(keywords)].slice(0, 3).join(' ') || 'retail';
 
     // 1. Pull real, current listings from Adzuna
     let adzunaUrl =
@@ -55,11 +59,9 @@ app.post('/api/match', async (req, res) => {
       adzunaUrl += hoursNum <= 25 ? '&part_time=1' : '&full_time=1';
     }
     // Adzuna's salary filter is annual, so convert an hourly target roughly (hourly * 2080)
-    const wageNum = parseFloat(wage);
-    if (!isNaN(wageNum)) {
-      adzunaUrl += `&salary_min=${Math.round(wageNum * 2080 * 0.7)}`;
-    }
-
+   // Salary filtering disabled for now because many entry-level jobs
+// do not provide salary data in Adzuna.
+console.log("Adzuna URL:", adzunaUrl);
     const adzunaRes = await fetch(adzunaUrl);
     if (!adzunaRes.ok) {
       throw new Error(`Adzuna request failed (${adzunaRes.status}). Double check your Adzuna keys and zip code.`);
@@ -138,7 +140,7 @@ no extra text, like:
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-5',
+       model: 'claude-sonnet-4-20250514',
         max_tokens: 4000,
         thinking: { type: 'enabled', budget_tokens: 3000 },
         messages: [{ role: 'user', content: prompt }]
